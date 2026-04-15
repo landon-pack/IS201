@@ -1,0 +1,158 @@
+/* ========================
+   Global & Body
+======================== */
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background-color: #f0f4f8;
+    color: #222;
+    margin: 0;
+    padding: 0;
+}
+
+/* ========================
+   Navigation
+======================== */
+nav {
+    background-color: #1a3c5e;
+    padding: 12px 24px;
+    display: flex;
+    gap: 24px;
+}
+
+nav a {
+    color: #f0f4f8;
+    font-family: 'Arial', sans-serif;
+    text-decoration: none;
+    font-size: 15px;
+    letter-spacing: 0.5px;
+}
+
+nav a:hover {
+    text-decoration: underline;
+}
+
+/* ========================
+   Header
+======================== */
+header {
+    background-color: #1a3c5e;
+    color: #ffffff;
+    text-align: center;
+    padding: 60px 20px 40px;
+}
+
+header h1 {
+    font-family: 'Georgia', serif;
+    font-size: 2.8rem;
+    margin: 0 0 10px;
+}
+
+header p {
+    font-size: 1.1rem;
+    color: #b8d0e8;
+    margin: 0;
+}
+
+/* ========================
+   Content Sections (divs)
+======================== */
+.section {
+    max-width: 800px;
+    margin: 40px auto;
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 32px 40px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+
+.section h2 {
+    font-family: 'Arial', sans-serif;
+    font-size: 1.6rem;
+    color: #1a3c5e;
+    margin-top: 0;
+    border-bottom: 2px solid #b8d0e8;
+    padding-bottom: 8px;
+}
+
+/* ========================
+   Destination List
+======================== */
+.destination-list {
+    padding-left: 20px;
+    font-size: 1rem;
+    line-height: 1.8;
+}
+
+.destination-list > li {
+    font-weight: bold;
+    color: #1a3c5e;
+    margin-bottom: 6px;
+}
+
+.destination-list ul {
+    list-style-type: disc;
+    padding-left: 20px;
+    font-weight: normal;
+    color: #444;
+}
+
+/* ========================
+   Image Block
+======================== */
+.image-block {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.image-block img {
+    width: 100%;
+    max-width: 600px;
+    border-radius: 6px;
+}
+
+.caption {
+    font-size: 0.85rem;
+    color: #777;
+    margin-top: 6px;
+}
+
+
+/* Video */
+
+.video{
+    margin-left: 250;
+    padding-left: 250;
+}
+
+/* Tableau */
+
+.tab{
+    width: 100%;
+    max-width: 600px;
+    border-radius: 6px;
+
+}
+
+
+/* ========================
+   Footer
+======================== */
+footer {
+    text-align: center;
+    padding: 30px;
+    background-color: #1a3c5e;
+    color: #b8d0e8;
+    font-family: 'Arial', sans-serif;
+    font-size: 0.9rem;
+}
+
+footer a {
+    color: #ffffff;
+    text-decoration: none;
+    margin-left: 16px;
+}
+
+footer a:hover {
+    text-decoration: underline;
+}
+

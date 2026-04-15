@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sky Wanderer – Travel Snake</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap');
+
+        :root {
+            --sky: #0a1628;
+            --sky-mid: #0d2347;
+            --sky-light: #1a3a6e;
+            --cloud: rgba(255,255,255,0.06);
+            --gold: #f5c842;
+            --gold-light: #ffe27a;
+            --teal: #2dd4c0;
+            --red: #ff4f5e;
+            --white: #f0f4ff;
+            --muted: #8899bb;
+            --plane-body: #e8f0ff;
+            --plane-wing: #c0cfe8;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--sky);
+            font-family: 'DM Sans', sans-serif;
+            color: var(--white);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Starfield */
+        .stars {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle var(--d) ease-in-out infinite;
+        }
+        @keyframes twinkle {
+            0%, 100% { opacity: var(--min); }
+            50% { opacity: var(--max); }
+        }
+
+        /* Clouds */
+        .cloud-layer {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+        .cloud {
+            position: absolute;
+            background: var(--cloud);
+            border-radius: 50px;
+            animation: drift linear infinite;
+        }
+        @keyframes drift {
+            from { transform: translateX(-300px); }
+            to   { transform: translateX(110vw); }
+        }
+
+        /* Flight path dashes */
+        .flight-path {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Main layout */
+        .wrapper {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+        }
+        .title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 52px;
+            letter-spacing: 4px;
+            color: var(--gold);
+            text-shadow: 0 0 40px rgba(245,200,66,0.4);
+            line-height: 1;
+        }
+        .subtitle {
+            font-size: 12px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        /* Score bar */
+        .score-bar {
+            display: flex;
+            gap: 40px;
+            align-items: center;
+        }
+        .score-item {
+            text-align: center;
+        }
+        .score-label {
+            font-size: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+        .score-value {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 32px;
+            color: var(--gold);
+            line-height: 1.1;
+        }
+
+        /* Canvas container */
+        .canvas-wrap {
+            position: relative;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow:
+                0 0 0 1px rgba(245,200,66,0.15),
+                0 0 60px rgba(10,22,40,0.8),
+                inset 0 0 80px rgba(13,35,71,0.5);
+        }
+
+        canvas {
+            display: block;
+        }
+
+        /* Overlay screens */
+        .overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(10,22,40,0.88);
+            backdrop-filter: blur(6px);
+            gap: 18px;
+            transition: opacity 0.3s;
+        }
+        .overlay.hidden { display: none; }
+
+        .overlay-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 48px;
+            letter-spacing: 4px;
+            color: var(--gold);
+            text-shadow: 0 0 30px rgba(245,200,66,0.5);
+        }
+        .overlay-sub {
+            font-size: 13px;
+            color: var(--muted);
+            letter-spacing: 1px;
+            text-align: center;
+            line-height: 1.8;
+        }
+        .overlay-score {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 28px;
+            color: var(--teal);
+        }
+
+        .btn {
+            background: var(--gold);
+            color: var(--sky);
+            border: none;
+            padding: 12px 36px;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 20px;
+            letter-spacing: 3px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 20px rgba(245,200,66,0.3);
+        }
+        .btn:hover {
+            background: var(--gold-light);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 28px rgba(245,200,66,0.45);
+        }
+        .btn:active { transform: translateY(0); }
+
+        /* Controls hint */
+        .controls {
+            display: flex;
+            gap: 24px;
+            font-size: 11px;
+            color: var(--muted);
+            letter-spacing: 1px;
+        }
+        .controls span { display: flex; align-items: center; gap: 6px; }
+        .key {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 4px;
+            padding: 2px 7px;
+            font-size: 11px;
+        }
+
+        /* Destination popup */
+        .destination-popup {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: rgba(13,35,71,0.9);
+            border: 1px solid rgba(245,200,66,0.3);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 12px;
+            color: var(--gold);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            max-width: 160px;
+            text-align: center;
+        }
+        .destination-popup.show { opacity: 1; }
+        .destination-popup .dest-name {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 18px;
+            letter-spacing: 2px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="stars" id="stars"></div>
+<div class="cloud-layer" id="clouds"></div>
+
+<div class="wrapper">
+    <div class="header">
+        <div class="title">✈ Sky Wanderer</div>
+        <div class="subtitle">Collect globes · Explore the world</div>
+    </div>
+
+    <div class="score-bar">
+        <div class="score-item">
+            <div class="score-label">Destinations</div>
+            <div class="score-value" id="score">0</div>
+        </div>
+        <div class="score-item">
+            <div class="score-label">Best</div>
+            <div class="score-value" id="best">0</div>
+        </div>
+        <div class="score-item">
+            <div class="score-label">Level</div>
+            <div class="score-value" id="level">1</div>
+        </div>
+    </div>
+
+    <div class="canvas-wrap">
+        <canvas id="game" width="480" height="480"></canvas>
+
+        <div class="overlay" id="startScreen">
+            <div class="overlay-title">✈ Sky Wanderer</div>
+            <div class="overlay-sub">
+                Fly your plane across the skies<br>
+                Collect 🌍 globes to visit new destinations<br>
+                Don't crash into yourself!
+            </div>
+            <button class="btn" onclick="startGame()">Board Flight</button>
+        </div>
+
+        <div class="overlay hidden" id="gameOverScreen">
+            <div class="overlay-title">Landed Early</div>
+            <div class="overlay-sub" id="finalMsg">Your journey has ended</div>
+            <div class="overlay-score" id="finalScore"></div>
+            <button class="btn" onclick="startGame()">Fly Again</button>
+        </div>
+
+        <div class="destination-popup" id="destPopup">
+            <div>Arrived in</div>
+            <div class="dest-name" id="destName"></div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <span><span class="key">↑↓←→</span> Steer plane</span>
+        <span><span class="key">WASD</span> Also works</span>
+        <span><span class="key">P</span> Pause</span>
+    </div>
+</div>
+
+<script>
+// ── Stars & Clouds (cosmetic) ──────────────────────────────
+(function buildBg() {
+    const starsEl = document.getElementById('stars');
+    for (let i = 0; i < 120; i++) {
+        const s = document.createElement('div');
+        s.className = 'star';
+        const size = Math.random() * 2 + 0.5;
+        s.style.cssText = `
+            width:${size}px;height:${size}px;
+            left:${Math.random()*100}%;top:${Math.random()*100}%;
+            --d:${(Math.random()*3+2).toFixed(1)}s;
+            --min:${(Math.random()*0.2).toFixed(2)};
+            --max:${(Math.random()*0.6+0.3).toFixed(2)};
+            animation-delay:${(Math.random()*4).toFixed(1)}s;
+        `;
+        starsEl.appendChild(s);
+    }
+    const cloudsEl = document.getElementById('clouds');
+    for (let i = 0; i < 6; i++) {
+        const c = document.createElement('div');
+        c.className = 'cloud';
+        const w = Math.random()*200+100, h = Math.random()*30+15;
+        c.style.cssText = `
+            width:${w}px;height:${h}px;
+            top:${Math.random()*100}%;
+            animation-duration:${(Math.random()*60+40).toFixed(0)}s;
+            animation-delay:-${(Math.random()*60).toFixed(0)}s;
+            opacity:${(Math.random()*0.5+0.2).toFixed(2)};
+        `;
+        cloudsEl.appendChild(c);
+    }
+})();
+
+// ── Game ───────────────────────────────────────────────────
+const canvas = document.getElementById('game');
+const ctx    = canvas.getContext('2d');
+
+const GRID = 20;        // cells
+const CELL = 480 / GRID; // px per cell = 24
+
+const DESTINATIONS = [
+    'Tokyo','Paris','Rome','Barcelona','Bogotá','Dublin',
+    'Gdańsk','Bali','Cairo','Sydney','New York','Bangkok',
+    'Lisbon','Istanbul','Nairobi','Buenos Aires','Seoul',
+    'Amsterdam','Marrakech','Reykjavik'
+];
+
+let snake, dir, nextDir, food, score, best = 0, speed, gameLoop, paused, running;
+
+function initSnake() {
+    snake = [
+        {x:10, y:10},
+        {x:9,  y:10},
+        {x:8,  y:10},
+    ];
+    dir     = {x:1, y:0};
+    nextDir = {x:1, y:0};
+    score   = 0;
+    speed   = 140;
+    paused  = false;
+    running = true;
+    placeFood();
+    updateScore();
+}
+
+function placeFood() {
+    let pos;
+    do {
+        pos = { x: Math.floor(Math.random()*GRID), y: Math.floor(Math.random()*GRID) };
+    } while (snake.some(s => s.x===pos.x && s.y===pos.y));
+    food = pos;
+}
+
+function updateScore() {
+    document.getElementById('score').textContent = score;
+    document.getElementById('best').textContent  = best;
+    document.getElementById('level').textContent = Math.floor(score/5)+1;
+}
+
+// ── Drawing ────────────────────────────────────────────────
+function drawGrid() {
+    ctx.clearRect(0, 0, 480, 480);
+
+    // Sky gradient
+    const sky = ctx.createLinearGradient(0,0,0,480);
+    sky.addColorStop(0,   '#050e1f');
+    sky.addColorStop(0.5, '#0a1628');
+    sky.addColorStop(1,   '#0d2347');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0,0,480,480);
+
+    // Subtle grid lines (flight map)
+    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+    ctx.lineWidth = 0.5;
+    for (let i = 0; i <= GRID; i++) {
+        ctx.beginPath(); ctx.moveTo(i*CELL,0); ctx.lineTo(i*CELL,480); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0,i*CELL); ctx.lineTo(480,i*CELL); ctx.stroke();
+    }
+}
+
+function drawFood() {
+    const cx = food.x * CELL + CELL/2;
+    const cy = food.y * CELL + CELL/2;
+    const t  = Date.now() / 600;
+    const pulse = Math.sin(t) * 3;
+
+    // Glow
+    const grd = ctx.createRadialGradient(cx, cy, 2, cx, cy, CELL*0.9+pulse);
+    grd.addColorStop(0,   'rgba(45,212,192,0.35)');
+    grd.addColorStop(1,   'rgba(45,212,192,0)');
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.arc(cx, cy, CELL*0.9+pulse, 0, Math.PI*2);
+    ctx.fill();
+
+    // Globe emoji
+    ctx.font = `${CELL*0.85}px serif`;
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🌍', cx, cy + 1);
+}
+
+function drawSnake() {
+    snake.forEach((seg, i) => {
+        const cx = seg.x * CELL + CELL/2;
+        const cy = seg.y * CELL + CELL/2;
+
+        if (i === 0) {
+            // Head = plane
+            drawPlane(cx, cy);
+        } else {
+            // Trail = contrail dots
+            const alpha = Math.max(0.15, 1 - i / (snake.length + 4));
+            const size  = Math.max(4, CELL*0.35 - i*0.4);
+
+            ctx.save();
+            ctx.globalAlpha = alpha;
+
+            // Contrail segment
+            const grad = ctx.createRadialGradient(cx,cy,0,cx,cy,size);
+            grad.addColorStop(0, 'rgba(240,244,255,0.9)');
+            grad.addColorStop(1, 'rgba(180,200,240,0)');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(cx, cy, size, 0, Math.PI*2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+    });
+}
+
+function drawPlane(cx, cy) {
+    ctx.save();
+    ctx.translate(cx, cy);
+
+    // Rotate to face direction
+    const angle = Math.atan2(dir.y, dir.x);
+    ctx.rotate(angle);
+
+    const s = CELL * 0.42; // scale
+
+    // Engine glow
+    const glow = ctx.createRadialGradient(-s*0.8, 0, 0, -s*0.8, 0, s*1.2);
+    glow.addColorStop(0,   'rgba(100,160,255,0.3)');
+    glow.addColorStop(1,   'rgba(100,160,255,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(-s*0.8, 0, s*1.2, 0, Math.PI*2);
+    ctx.fill();
+
+    // --- Fuselage ---
+    ctx.fillStyle = '#e8f0ff';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, s*1.1, s*0.28, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // Nose cone highlight
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.ellipse(s*0.7, 0, s*0.25, s*0.15, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // --- Wings ---
+    ctx.fillStyle = '#b0c4e8';
+    ctx.beginPath();
+    ctx.moveTo(-s*0.1,  0);
+    ctx.lineTo(-s*0.5,  -s*0.9);
+    ctx.lineTo(-s*0.7,  -s*0.9);
+    ctx.lineTo(-s*0.9,   0);
+    ctx.lineTo(-s*0.7,   s*0.9);
+    ctx.lineTo(-s*0.5,   s*0.9);
+    ctx.closePath();
+    ctx.fill();
+
+    // Wing highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.beginPath();
+    ctx.moveTo(-s*0.15,  0);
+    ctx.lineTo(-s*0.5,  -s*0.75);
+    ctx.lineTo(-s*0.65, -s*0.75);
+    ctx.lineTo(-s*0.85,  0);
+    ctx.closePath();
+    ctx.fill();
+
+    // --- Tail fins ---
+    ctx.fillStyle = '#c0d0ea';
+    ctx.beginPath();
+    ctx.moveTo(-s*0.75,  0);
+    ctx.lineTo(-s*1.05, -s*0.5);
+    ctx.lineTo(-s*1.1,  -s*0.5);
+    ctx.lineTo(-s*1.0,   0);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(-s*0.75,  0);
+    ctx.lineTo(-s*1.05,  s*0.5);
+    ctx.lineTo(-s*1.1,   s*0.5);
+    ctx.lineTo(-s*1.0,   0);
+    ctx.closePath();
+    ctx.fill();
+
+    // --- Windows ---
+    const winSpacing = s * 0.28;
+    for (let w = 0; w < 3; w++) {
+        ctx.fillStyle = 'rgba(150,210,255,0.8)';
+        ctx.beginPath();
+        ctx.ellipse(s*0.25 - w*winSpacing, -s*0.1, s*0.07, s*0.1, 0, 0, Math.PI*2);
+        ctx.fill();
+    }
+
+    // --- Gold livery stripe ---
+    ctx.strokeStyle = '#f5c842';
+    ctx.lineWidth = s * 0.08;
+    ctx.globalAlpha = 0.7;
+    ctx.beginPath();
+    ctx.moveTo(-s*0.9, s*0.08);
+    ctx.lineTo( s*0.9, s*0.08);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    ctx.restore();
+}
+
+function drawParticles() {
+    particles.forEach(p => {
+        ctx.save();
+        ctx.globalAlpha = p.alpha;
+        ctx.font = `${p.size}px serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(p.emoji, p.x, p.y);
+        ctx.restore();
+    });
+}
+
+// ── Particles ─────────────────────────────────────────────
+let particles = [];
+
+function spawnParticles(x, y) {
+    const emojis = ['⭐','✨','💫','🌟'];
+    for (let i = 0; i < 6; i++) {
+        particles.push({
+            x, y,
+            vx: (Math.random()-0.5)*4,
+            vy: (Math.random()-0.5)*4,
+            alpha: 1,
+            size: Math.random()*14+10,
+            emoji: emojis[Math.floor(Math.random()*emojis.length)]
+        });
+    }
+}
+
+function updateParticles() {
+    particles = particles.filter(p => p.alpha > 0.05);
+    particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.alpha -= 0.04;
+        p.vy -= 0.05;
+    });
+}
+
+// ── Destination popup ──────────────────────────────────────
+let popupTimer = null;
+
+function showDestination() {
+    const dest = DESTINATIONS[Math.floor(Math.random()*DESTINATIONS.length)];
+    const popup = document.getElementById('destPopup');
+    document.getElementById('destName').textContent = dest;
+    popup.classList.add('show');
+    clearTimeout(popupTimer);
+    popupTimer = setTimeout(() => popup.classList.remove('show'), 1800);
+}
+
+// ── Game step ──────────────────────────────────────────────
+function step() {
+    if (!running || paused) return;
+
+    dir = { ...nextDir };
+
+    const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+
+    // Wall collision
+    if (head.x < 0 || head.x >= GRID || head.y < 0 || head.y >= GRID) {
+        return gameOver();
+    }
+    // Self collision
+    if (snake.some(s => s.x===head.x && s.y===head.y)) {
+        return gameOver();
+    }
+
+    snake.unshift(head);
+
+    // Ate food?
+    if (head.x===food.x && head.y===food.y) {
+        score++;
+        if (score > best) best = score;
+        updateScore();
+        placeFood();
+        showDestination();
+        spawnParticles(head.x*CELL+CELL/2, head.y*CELL+CELL/2);
+
+        // Speed up every 5 globes
+        if (score % 5 === 0 && speed > 60) speed -= 8;
+
+        clearInterval(gameLoop);
+        gameLoop = setInterval(tick, speed);
+    } else {
+        snake.pop();
+    }
+}
+
+function tick() {
+    step();
+    drawGrid();
+    drawFood();
+    drawSnake();
+    drawParticles();
+    updateParticles();
+}
+
+// ── Controls ───────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+    switch(e.key) {
+        case 'ArrowUp':    case 'w': case 'W':
+            if (dir.y !== 1)  nextDir = {x:0,  y:-1}; break;
+        case 'ArrowDown':  case 's': case 'S':
+            if (dir.y !== -1) nextDir = {x:0,  y:1};  break;
+        case 'ArrowLeft':  case 'a': case 'A':
+            if (dir.x !== 1)  nextDir = {x:-1, y:0};  break;
+        case 'ArrowRight': case 'd': case 'D':
+            if (dir.x !== -1) nextDir = {x:1,  y:0};  break;
+        case 'p': case 'P':
+            if (running) { paused = !paused; drawPause(); } break;
+    }
+    if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) {
+        e.preventDefault();
+    }
+});
+
+function drawPause() {
+    if (!paused) return;
+    ctx.fillStyle = 'rgba(10,22,40,0.7)';
+    ctx.fillRect(0,0,480,480);
+    ctx.fillStyle = '#f5c842';
+    ctx.font = "bold 36px 'Bebas Neue', sans-serif";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.letterSpacing = '4px';
+    ctx.fillText('PAUSED', 240, 240);
+    ctx.font = "14px 'DM Sans', sans-serif";
+    ctx.fillStyle = '#8899bb';
+    ctx.fillText('Press P to resume', 240, 278);
+}
+
+// ── Game flow ──────────────────────────────────────────────
+function startGame() {
+    document.getElementById('startScreen').classList.add('hidden');
+    document.getElementById('gameOverScreen').classList.add('hidden');
+    clearInterval(gameLoop);
+    particles = [];
+    initSnake();
+    gameLoop = setInterval(tick, speed);
+}
+
+function gameOver() {
+    running = false;
+    clearInterval(gameLoop);
+
+    // Draw crash flash
+    ctx.fillStyle = 'rgba(255,79,94,0.25)';
+    ctx.fillRect(0,0,480,480);
+
+    setTimeout(() => {
+        document.getElementById('finalScore').textContent =
+            `${score} destination${score!==1?'s':''} visited`;
+        const msgs = [
+            'Turbulence got you!', 'The runway is calling.',
+            'Time to refuel.', 'Safe travels next time!'
+        ];
+        document.getElementById('finalMsg').textContent =
+            msgs[Math.floor(Math.random()*msgs.length)];
+        document.getElementById('gameOverScreen').classList.remove('hidden');
+    }, 400);
+}
+
+// Initial render
+drawGrid();
+</script>
+</body>
+</html>
